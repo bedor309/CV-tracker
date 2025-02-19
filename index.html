@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f3f4f6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+
+        .header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .title {
+            color: #2563eb;
+            margin: 0;
+        }
+
+        .button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #1e40af;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .status-pill {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-applied { background-color: #dbeafe; color: #1e40af; }
+        .status-interviewing { background-color: #fef3c7; color: #92400e; }
+        .status-offered { background-color: #dcfce7; color: #166534; }
+        .status-rejected { background-color: #fee2e2; color: #991b1b; }
+        .status-pending { background-color: #e5e7eb; color: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Job Application Tracker</h1>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <button class="button" onclick="openNewApplicationModal()">Add New Application</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>Job Role</th>
+                    <th>Date Applied</th>
+                    <th>Way of Application</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="applicationsTable">
+                <!-- Applications will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="newApplicationModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">New Application</h2>
+            <form id="newApplicationForm">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="company" required>
+                </div>
+                <div class="form-group">
+                    <label>Job Role</label>
+                    <input type="text" name="role" required>
+                </div>
+                <div class="form-group">
+                    <label>Date Applied</label>
+                    <input type="date" name="dateApplied" required>
+                </div>
+                <div class="form-group">
+                    <label>Way of Application</label>
+                    <select name="applicationMethod" required>
+                        <option value="Company Website">Company Website</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Indeed">Indeed</option>
+                        <option value="Referral">Referral</option>
+                        <option value="Email">Direct Email</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" required>
+                        <option value="applied">Applied</option>
+                        <option value="interviewing">Interviewing</option>
+                        <option value="offered">Offered</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" placeholder="Add any additional notes here..."></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="button" style="background-color: #6b7280;" onclick="closeNewApplicationModal()">Cancel</button>
+                    <button type="submit" class="button">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize applications array
+        let applications = JSON.parse(localStorage.getItem('applications') || '[]');
+        let editingAppId = null;
+
+        // Render applications table
+        function renderApplications() {
+            const tbody = document.getElementById('applicationsTable');
+            tbody.innerHTML = applications.map(app => `
+                <tr>
+                    <td>${app.company}</td>
+                    <td>${app.role}</td>
+                    <td>${new Date(app.dateApplied).toLocaleDateString()}</td>
+                    <td>${app.applicationMethod}</td>
+                    <td><span class="status-pill status-${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span></td>
+                    <td>${app.notes || '-'}</td>
+                    <td>
+                        <button class="button" onclick="editApplication('${app.id}')">Edit</button>
+                        <button class="button" onclick="deleteApplication('${app.id}')" style="background-color: #ef4444">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Modal functions
+        function openNewApplicationModal() {
+            editingAppId = null;
+            document.getElementById('modalTitle').textContent = 'New Application';
+            document.getElementById('newApplicationForm').reset();
+            document.getElementById('newApplicationModal').style.display = 'flex';
+        }
+
+        function closeNewApplicationModal() {
+            document.getElementById('newApplicationModal').style.display = 'none';
+        }
+
+        function editApplication(id) {
+            editingAppId = id;
+            const app = applications.find(app => app.id === id);
+            document.getElementById('modalTitle').textContent = 'Edit Application';
+            document.querySelector('[name="company"]').value = app.company;
+            document.querySelector('[name="role"]').value = app.role;
+            document.querySelector('[name="dateApplied"]').value = app.dateApplied;
+            document.querySelector('[name="applicationMethod"]').value = app.applicationMethod;
+            document.querySelector('[name="status"]').value = app.status;
+            document.querySelector('[name="notes"]').value = app.notes;
+            document.getElementById('newApplicationModal').style.display = 'flex';
+        }
+
+        // Form submission
+        document.getElementById('newApplicationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const newApplication = {
+                id: editingAppId || Date.now().toString(),
+                company: formData.get('company'),
+                role: formData.get('role'),
+                dateApplied: formData.get('dateApplied'),
+                applicationMethod: formData.get('applicationMethod'),
+                status: formData.get('status'),
+                notes: formData.get('notes')
+            };
+
+            if (editingAppId) {
+                // Edit application
+                const index = applications.findIndex(app => app.id === editingAppId);
+                applications[index] = newApplication;
+            } else {
+                // Add new application
+                applications.push(newApplication);
+            }
+
+            localStorage.setItem('applications', JSON.stringify(applications));
+            renderApplications();
+            closeNewApplicationModal();
+        });
+
+        // Delete application
+        function deleteApplication(id) {
+            if (confirm('Are you sure you want to delete this application?')) {
+                applications = applications.filter(app => app.id !== id);
+                localStorage.setItem('applications', JSON.stringify(applications));
+                renderApplications();
+            }
+        }
+
+        // Initial render
+        renderApplications();
+    </script>
+</body>
+</html>
