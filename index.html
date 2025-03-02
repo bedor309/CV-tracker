@@ -110,37 +110,6 @@
             resize: vertical;
         }
 
-        .status-pill {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .status-applied {
-            background-color: #dbeafe;
-            color: #1e40af;
-        }
-
-        .status-interviewing {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-offered {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-
-        .status-rejected {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        .status-pending {
-            background-color: #e5e7eb;
-            color: #374151;
-        }
     </style>
 </head>
 
@@ -154,6 +123,7 @@
         <div style="margin-bottom: 20px;">
             <h2>Job Application Tracker</h2>
             <button class="button" onclick="openCvTrackerModal()">Add CV</button>
+            <button class="button" onclick="saveAllCvData()">Save All Data</button>
         </div>
 
         <table>
@@ -177,13 +147,13 @@
         <div style="margin-bottom: 20px;">
             <h2>Companies to Track for Job Openings</h2>
             <button class="button" onclick="openCompanyTrackerModal()">Add Company</button>
+            <button class="button" onclick="saveAllCompanyData()">Save All Data</button>
         </div>
 
         <table>
             <thead>
                 <tr>
                     <th>Company Name</th>
-                    <th>Job Opening</th>
                     <th>Notes</th>
                     <th>Actions</th>
                 </tr>
@@ -192,8 +162,6 @@
                 <!-- Companies will be inserted here -->
             </tbody>
         </table>
-
-        <button class="button" onclick="saveAllData()">Save All Data</button>
 
         <!-- Modal for Adding CV -->
         <div id="cvModal" class="modal">
@@ -248,12 +216,12 @@
                         <input type="text" name="company" required>
                     </div>
                     <div class="form-group">
-                        <label>Job Opening</label>
-                        <input type="text" name="jobOpening" required>
-                    </div>
-                    <div class="form-group">
                         <label>Notes</label>
                         <textarea name="notes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Company URL</label>
+                        <input type="text" name="companyUrl" required>
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
                         <button type="button" class="button" style="background-color: #6b7280;" onclick="closeCompanyTrackerModal()">Cancel</button>
@@ -268,7 +236,7 @@
     <script>
         // Job Application Tracker Section
         let cvApplications = JSON.parse(localStorage.getItem('cvApplications') || '[]');
-        let companiesToTrack = JSON.parse(localStorage.getItem('companiesToTrack') || '[]');
+        let editingCv = null;
 
         function renderCvApplications() {
             const tbody = document.getElementById('cvTable');
@@ -288,12 +256,77 @@
             `).join('');
         }
 
+        function openCvTrackerModal() {
+            editingCv = null;
+            document.getElementById('cvModal').style.display = 'flex';
+            document.getElementById('cvForm').reset();
+        }
+
+        function closeCvTrackerModal() {
+            document.getElementById('cvModal').style.display = 'none';
+        }
+
+        function saveCv(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const dateApplied = formData.get('dateApplied');
+            const followUpDate = new Date(dateApplied);
+            followUpDate.setDate(followUpDate.getDate() + 7);
+            const newCv = {
+                id: editingCv ? editingCv.id : Date.now().toString(),
+                company: formData.get('company'),
+                position: formData.get('position'),
+                dateApplied,
+                followUpDate: followUpDate.toISOString().split('T')[0],
+                status: formData.get('status'),
+                cvFile: URL.createObjectURL(formData.get('cvFile'))
+            };
+
+            if (editingCv) {
+                const index = cvApplications.findIndex(cv => cv.id === editingCv.id);
+                cvApplications[index] = newCv;
+            } else {
+                cvApplications.push(newCv);
+            }
+
+            localStorage.setItem('cvApplications', JSON.stringify(cvApplications));
+            renderCvApplications();
+            closeCvTrackerModal();
+        }
+
+        function deleteCv(id) {
+            cvApplications = cvApplications.filter(cv => cv.id !== id);
+            localStorage.setItem('cvApplications', JSON.stringify(cvApplications));
+            renderCvApplications();
+        }
+
+        function editCv(id) {
+            editingCv = cvApplications.find(cv => cv.id === id);
+            document.getElementById('cvModal').style.display = 'flex';
+            const form = document.getElementById('cvForm');
+            form.querySelector('[name="company"]').value = editingCv.company;
+            form.querySelector('[name="position"]').value = editingCv.position;
+            form.querySelector('[name="dateApplied"]').value = editingCv.dateApplied;
+            form.querySelector('[name="followUpDate"]').value = editingCv.followUpDate;
+            form.querySelector('[name="status"]').value = editingCv.status;
+        }
+
+        function saveAllCvData() {
+            localStorage.setItem('cvApplications', JSON.stringify(cvApplications));
+            alert('All CV data saved!');
+        }
+
+        document.getElementById('cvForm').addEventListener('submit', saveCv);
+
+        // Company Tracker Section
+        let companiesToTrack = JSON.parse(localStorage.getItem('companiesToTrack') || '[]');
+        let editingCompany = null;
+
         function renderCompaniesToTrack() {
             const tbody = document.getElementById('companyTable');
             tbody.innerHTML = companiesToTrack.map(company => `
                 <tr>
                     <td><a href="${company.url}" target="_blank">${company.name}</a></td>
-                    <td>${company.jobOpening}</td>
                     <td>${company.notes}</td>
                     <td>
                         <button class="button" onclick="editCompany('${company.id}')">Edit</button>
@@ -303,54 +336,59 @@
             `).join('');
         }
 
-        function openCvTrackerModal() {
-            document.getElementById('cvModal').style.display = 'flex';
-        }
-
-        function closeCvTrackerModal() {
-            document.getElementById('cvModal').style.display = 'none';
-        }
-
         function openCompanyTrackerModal() {
+            editingCompany = null;
             document.getElementById('companyModal').style.display = 'flex';
+            document.getElementById('companyForm').reset();
         }
 
         function closeCompanyTrackerModal() {
             document.getElementById('companyModal').style.display = 'none';
         }
 
-        document.getElementById('cvForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const newCv = {
-                id: Date.now().toString(),
-                company: formData.get('company'),
-                position: formData.get('position'),
-                dateApplied: formData.get('dateApplied'),
-                followUpDate: formData.get('followUpDate'),
-                status: formData.get('status'),
-                cvFile: URL.createObjectURL(formData.get('cvFile'))
-            };
-            cvApplications.push(newCv);
-            localStorage.setItem('cvApplications', JSON.stringify(cvApplications));
-            renderCvApplications();
-            closeCvTrackerModal();
-        });
-
-        document.getElementById('companyForm').addEventListener('submit', function(event) {
+        function saveCompany(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
             const newCompany = {
-                id: Date.now().toString(),
+                id: editingCompany ? editingCompany.id : Date.now().toString(),
                 name: formData.get('company'),
-                jobOpening: formData.get('jobOpening'),
                 notes: formData.get('notes'),
+                url: formData.get('companyUrl')
             };
-            companiesToTrack.push(newCompany);
+
+            if (editingCompany) {
+                const index = companiesToTrack.findIndex(company => company.id === editingCompany.id);
+                companiesToTrack[index] = newCompany;
+            } else {
+                companiesToTrack.push(newCompany);
+            }
+
             localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
             renderCompaniesToTrack();
             closeCompanyTrackerModal();
-        });
+        }
+
+        function deleteCompany(id) {
+            companiesToTrack = companiesToTrack.filter(company => company.id !== id);
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            renderCompaniesToTrack();
+        }
+
+        function editCompany(id) {
+            editingCompany = companiesToTrack.find(company => company.id === id);
+            document.getElementById('companyModal').style.display = 'flex';
+            const form = document.getElementById('companyForm');
+            form.querySelector('[name="company"]').value = editingCompany.name;
+            form.querySelector('[name="notes"]').value = editingCompany.notes;
+            form.querySelector('[name="companyUrl"]').value = editingCompany.url;
+        }
+
+        function saveAllCompanyData() {
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            alert('All company data saved!');
+        }
+
+        document.getElementById('companyForm').addEventListener('submit', saveCompany);
 
         renderCvApplications();
         renderCompaniesToTrack();
