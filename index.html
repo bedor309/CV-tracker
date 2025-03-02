@@ -151,10 +151,6 @@
         <div class="header">
             <h1 class="title">Job Application Tracker</h1>
         </div>
-        <!-- Button to download data as CSV -->
-        <div style="margin-bottom: 20px;">
-            <button class="button" onclick="saveToCSV()">Save Data as CSV</button>
-        </div>
 
         <!-- Track Companies with Potential Job Openings -->
         <div style="margin-bottom: 20px;">
@@ -166,6 +162,7 @@
             <thead>
                 <tr>
                     <th>Company Name</th>
+                    <th>Notes</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -174,246 +171,112 @@
             </tbody>
         </table>
 
-        <!-- Job Application Tracker Table -->
-        <div style="margin-bottom: 20px;">
-            <button class="button" onclick="openNewApplicationModal()">Add New Application</button>
+        <!-- Modal for New Company -->
+        <div id="trackCompanyModal" class="modal">
+            <div class="modal-content">
+                <h2 id="modalTitle">Add Company</h2>
+                <form id="trackCompanyForm">
+                    <div class="form-group">
+                        <label>Company Name</label>
+                        <input type="text" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Company URL</label>
+                        <input type="url" name="companyUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" placeholder="Add any notes about the company..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="button" style="background-color: #6b7280;" onclick="closeTrackCompanyModal()">Cancel</button>
+                        <button type="submit" class="button">Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Company Name</th>
-                    <th>Job Role</th>
-                    <th>Date Applied</th>
-                    <th>Way of Application</th>
-                    <th>Status</th>
-                    <th>Follow-Up Date</th>
-                    <th>Notes</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="applicationsTable">
-                <!-- Applications will be inserted here -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Modal for New Company -->
-    <div id="trackCompanyModal" class="modal">
-        <div class="modal-content">
-            <h2>Add Company</h2>
-            <form id="trackCompanyForm">
-                <div class="form-group">
-                    <label>Company Name</label>
-                    <input type="text" name="company" required>
-                </div>
-                <div class="form-group">
-                    <label>Company URL</label>
-                    <input type="url" name="companyUrl" required>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="button" style="background-color: #6b7280;" onclick="closeTrackCompanyModal()">Cancel</button>
-                    <button type="submit" class="button">Save</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal for New Application -->
-    <div id="newApplicationModal" class="modal">
-        <div class="modal-content">
-            <h2 id="modalTitle">New Application</h2>
-            <form id="newApplicationForm">
-                <div class="form-group">
-                    <label>Company Name</label>
-                    <input type="text" name="company" required>
-                </div>
-                <div class="form-group">
-                    <label>Job Role</label>
-                    <input type="text" name="role" required>
-                </div>
-                <div class="form-group">
-                    <label>Date Applied</label>
-                    <input type="date" name="dateApplied" required>
-                </div>
-                <div class="form-group">
-                    <label>Way of Application</label>
-                    <select name="applicationMethod" required>
-                        <option value="Company Website">Company Website</option>
-                        <option value="LinkedIn">LinkedIn</option>
-                        <option value="Indeed">Indeed</option>
-                        <option value="Referral">Referral</option>
-                        <option value="Email">Direct Email</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select name="status" required>
-                        <option value="applied">Applied</option>
-                        <option value="interviewing">Interviewing</option>
-                        <option value="offered">Offered</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="pending">Pending</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Notes</label>
-                    <textarea name="notes" placeholder="Add any additional notes here..."></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="button" style="background-color: #6b7280;" onclick="closeNewApplicationModal()">Cancel</button>
-                    <button type="submit" class="button">Save</button>
-                </div>
-            </form>
-        </div>
     </div>
 
     <script>
-        // Track companies to check for job openings
         let companiesToTrack = JSON.parse(localStorage.getItem('companiesToTrack') || '[]');
-        let applications = JSON.parse(localStorage.getItem('applications') || '[]');
+        let editingCompany = null; // Variable to track which company is being edited
 
+        // Render the companies in the table
         function renderCompanies() {
             const tbody = document.getElementById('companiesTable');
             tbody.innerHTML = companiesToTrack.map(company => `
                 <tr>
                     <td><a href="${company.url}" target="_blank">${company.company}</a></td>
+                    <td>${company.notes || '-'}</td>
                     <td>
+                        <button class="button" onclick="editCompany('${company.id}')">Edit</button>
                         <button class="button" onclick="deleteCompany('${company.id}')">Delete</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function saveToCSV() {
-            // Create a header row for both tables
-            const applicationHeader = ['Company Name', 'Job Role', 'Date Applied', 'Way of Application', 'Status', 'Follow-Up Date', 'Notes'];
-            const companiesHeader = ['Company Name', 'Job Opening Status'];
-
-            // Convert applications array to CSV
-            const applicationsCSV = [applicationHeader.join(','), ...applications.map(app => [
-                app.company,
-                app.role,
-                new Date(app.dateApplied).toLocaleDateString(),
-                app.applicationMethod,
-                capitalizeFirstLetter(app.status),
-                new Date(new Date(app.dateApplied).setDate(new Date(app.dateApplied).getDate() + 7)).toLocaleDateString(),
-                app.notes || ''
-            ].join(','))].join('\n');
-
-            // Convert companiesToTrack array to CSV
-            const companiesCSV = [companiesHeader.join(','), ...companiesToTrack.map(company => [
-                company.company,
-                company.status
-            ].join(','))].join('\n');
-
-            // Combine both CSVs
-            const combinedCSV = `Companies to Track for Job Openings:\n${companiesCSV}\n\nJob Applications:\n${applicationsCSV}`;
-
-            // Trigger a download
-            const blob = new Blob([combinedCSV], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'job_data.csv';
-            link.click();
-        }
-
-        function renderApplications() {
-            const tbody = document.getElementById('applicationsTable');
-            tbody.innerHTML = applications.map(app => {
-                const followUpDate = new Date(app.dateApplied);
-                followUpDate.setDate(followUpDate.getDate() + 7);
-                return `
-                    <tr>
-                        <td>${app.company}</td>
-                        <td>${app.role}</td>
-                        <td>${new Date(app.dateApplied).toLocaleDateString()}</td>
-                        <td>${app.applicationMethod}</td>
-                        <td><span class="status-pill status-${app.status}">${capitalizeFirstLetter(app.status)}</span></td>
-                        <td>${followUpDate.toLocaleDateString()}</td>
-                        <td>${app.notes || '-'}</td>
-                        <td>
-                            <button class="button" onclick="editApplication('${app.id}')">Edit</button>
-                            <button class="button" onclick="deleteApplication('${app.id}')" style="background-color: #ef4444">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
+        // Open the modal to add a new company
         function openTrackCompanyModal() {
+            editingCompany = null; // Reset editingCompany
             document.getElementById('trackCompanyModal').style.display = 'flex';
+            document.getElementById('modalTitle').textContent = 'Add Company';
+            document.getElementById('trackCompanyForm').reset();
         }
 
+        // Open the modal to edit an existing company
+        function editCompany(id) {
+            editingCompany = companiesToTrack.find(company => company.id === id);
+            document.getElementById('trackCompanyModal').style.display = 'flex';
+            document.getElementById('modalTitle').textContent = 'Edit Company';
+            document.querySelector('[name="company"]').value = editingCompany.company;
+            document.querySelector('[name="companyUrl"]').value = editingCompany.url;
+            document.querySelector('[name="notes"]').value = editingCompany.notes || '';
+        }
+
+        // Close the modal
         function closeTrackCompanyModal() {
             document.getElementById('trackCompanyModal').style.display = 'none';
         }
 
-        function openNewApplicationModal() {
-            document.getElementById('newApplicationModal').style.display = 'flex';
-        }
-
-        function closeNewApplicationModal() {
-            document.getElementById('newApplicationModal').style.display = 'none';
-        }
-
-        function addCompany(event) {
+        // Save the company (either add or edit)
+        function saveCompany(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
             const newCompany = {
-                id: Date.now().toString(),
+                id: editingCompany ? editingCompany.id : Date.now().toString(),
                 company: formData.get('company'),
                 url: formData.get('companyUrl'),
-                status: 'Looking'
+                notes: formData.get('notes')
             };
-            companiesToTrack.push(newCompany);
+
+            if (editingCompany) {
+                // Update existing company
+                const index = companiesToTrack.findIndex(company => company.id === editingCompany.id);
+                companiesToTrack[index] = newCompany;
+            } else {
+                // Add new company
+                companiesToTrack.push(newCompany);
+            }
+
             localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
             renderCompanies();
             closeTrackCompanyModal();
         }
 
+        // Delete a company
         function deleteCompany(id) {
             companiesToTrack = companiesToTrack.filter(company => company.id !== id);
             localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
             renderCompanies();
         }
 
-        function addApplication(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const newApplication = {
-                id: Date.now().toString(),
-                company: formData.get('company'),
-                role: formData.get('role'),
-                dateApplied: formData.get('dateApplied'),
-                applicationMethod: formData.get('applicationMethod'),
-                status: formData.get('status'),
-                notes: formData.get('notes')
-            };
-            applications.push(newApplication);
-            localStorage.setItem('applications', JSON.stringify(applications));
-            renderApplications();
-            closeNewApplicationModal();
-        }
-
-        function deleteApplication(id) {
-            applications = applications.filter(app => app.id !== id);
-            localStorage.setItem('applications', JSON.stringify(applications));
-            renderApplications();
-        }
-
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
-
-        // Event listeners for the forms
-        document.getElementById('trackCompanyForm').addEventListener('submit', addCompany);
-        document.getElementById('newApplicationForm').addEventListener('submit', addApplication);
+        // Initialize the form and event listeners
+        document.getElementById('trackCompanyForm').addEventListener('submit', saveCompany);
 
         // Initial render
         renderCompanies();
-        renderApplications();
     </script>
 </body>
 
