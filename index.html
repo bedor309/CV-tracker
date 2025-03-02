@@ -151,6 +151,11 @@
         <div class="header">
             <h1 class="title">Job Application Tracker</h1>
         </div>
+        <!-- Button to download data as CSV -->
+<div style="margin-bottom: 20px;">
+    <button class="button" onclick="saveToCSV()">Save Data as CSV</button>
+</div>
+
 
         <!-- Track Companies with Potential Job Openings -->
         <div style="margin-bottom: 20px;">
@@ -286,6 +291,39 @@
                 </tr>
             `).join('');
         }
+        function saveToCSV() {
+    // Create a header row for both tables
+    const applicationHeader = ['Company Name', 'Job Role', 'Date Applied', 'Way of Application', 'Status', 'Follow-Up Date', 'Notes'];
+    const companiesHeader = ['Company Name', 'Job Opening Status'];
+
+    // Convert applications array to CSV
+    const applicationsCSV = [applicationHeader.join(','), ...applications.map(app => [
+        app.company,
+        app.role,
+        new Date(app.dateApplied).toLocaleDateString(),
+        app.applicationMethod,
+        capitalizeFirstLetter(app.status),
+        new Date(new Date(app.dateApplied).setDate(new Date(app.dateApplied).getDate() + 7)).toLocaleDateString(),
+        app.notes || ''
+    ].join(','))].join('\n');
+
+    // Convert companiesToTrack array to CSV
+    const companiesCSV = [companiesHeader.join(','), ...companiesToTrack.map(company => [
+        company.company,
+        company.status
+    ].join(','))].join('\n');
+
+    // Combine both CSVs
+    const combinedCSV = `Companies to Track for Job Openings:\n${companiesCSV}\n\nJob Applications:\n${applicationsCSV}`;
+
+    // Trigger a download
+    const blob = new Blob([combinedCSV], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'job_data.csv';
+    link.click();
+}
+
 
         function renderApplications() {
             const tbody = document.getElementById('applicationsTable');
