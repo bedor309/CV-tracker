@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Application Tracker</title>
+    <title>Job Application and Company Tracker</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -54,8 +53,7 @@
             margin-bottom: 20px;
         }
 
-        th,
-        td {
+        th, td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
@@ -156,7 +154,7 @@
         <div style="margin-bottom: 20px;">
             <h2>Job Application Tracker</h2>
             <button class="button" onclick="openCvTrackerModal()">Add CV</button>
-            <button class="button" onclick="saveAllData()">Save All Data</button>
+            <button class="button" onclick="saveAllCvData()">Save All Data</button>
         </div>
 
         <table>
@@ -173,6 +171,27 @@
             </thead>
             <tbody id="cvTable">
                 <!-- CVs will be inserted here -->
+            </tbody>
+        </table>
+
+        <!-- Companies to Track Section -->
+        <div style="margin-bottom: 20px;">
+            <h2>Companies to Track for Job Openings</h2>
+            <button class="button" onclick="openCompanyTrackerModal()">Add Company</button>
+            <button class="button" onclick="saveAllCompanyData()">Save All Data</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>Job Opening</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="companyTable">
+                <!-- Companies will be inserted here -->
             </tbody>
         </table>
 
@@ -213,6 +232,31 @@
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
                         <button type="button" class="button" style="background-color: #6b7280;" onclick="closeCvTrackerModal()">Cancel</button>
+                        <button type="submit" class="button">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal for Adding Company -->
+        <div id="companyModal" class="modal">
+            <div class="modal-content">
+                <h2>Add Company</h2>
+                <form id="companyForm">
+                    <div class="form-group">
+                        <label>Company Name</label>
+                        <input type="text" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Job Opening</label>
+                        <input type="text" name="jobOpening" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="button" style="background-color: #6b7280;" onclick="closeCompanyTrackerModal()">Cancel</button>
                         <button type="submit" class="button">Save</button>
                     </div>
                 </form>
@@ -301,15 +345,90 @@
             form.querySelector('[name="status"]').value = editingCv.status;
         }
 
-        function saveAllData() {
+        function saveAllCvData() {
             localStorage.setItem('cvApplications', JSON.stringify(cvApplications));
-            alert('All data saved!');
+            alert('All CV data saved!');
         }
 
         document.getElementById('cvForm').addEventListener('submit', saveCv);
 
+        // Company Tracker Section
+        let companiesToTrack = JSON.parse(localStorage.getItem('companiesToTrack') || '[]');
+        let editingCompany = null;
+
+        function renderCompaniesToTrack() {
+            const tbody = document.getElementById('companyTable');
+            tbody.innerHTML = companiesToTrack.map(company => `
+                <tr>
+                    <td><a href="${company.url}" target="_blank">${company.name}</a></td>
+                    <td>${company.jobOpening}</td>
+                    <td>${company.notes}</td>
+                    <td>
+                        <button class="button" onclick="editCompany('${company.id}')">Edit</button>
+                        <button class="button" onclick="deleteCompany('${company.id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openCompanyTrackerModal() {
+            editingCompany = null;
+            document.getElementById('companyModal').style.display = 'flex';
+            document.getElementById('companyForm').reset();
+        }
+
+        function closeCompanyTrackerModal() {
+            document.getElementById('companyModal').style.display = 'none';
+        }
+
+        function saveCompany(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const newCompany = {
+                id: editingCompany ? editingCompany.id : Date.now().toString(),
+                name: formData.get('company'),
+                jobOpening: formData.get('jobOpening'),
+                notes: formData.get('notes'),
+                url: formData.get('companyUrl')
+            };
+
+            if (editingCompany) {
+                const index = companiesToTrack.findIndex(company => company.id === editingCompany.id);
+                companiesToTrack[index] = newCompany;
+            } else {
+                companiesToTrack.push(newCompany);
+            }
+
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            renderCompaniesToTrack();
+            closeCompanyTrackerModal();
+        }
+
+        function deleteCompany(id) {
+            companiesToTrack = companiesToTrack.filter(company => company.id !== id);
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            renderCompaniesToTrack();
+        }
+
+        function editCompany(id) {
+            editingCompany = companiesToTrack.find(company => company.id === id);
+            document.getElementById('companyModal').style.display = 'flex';
+            const form = document.getElementById('companyForm');
+            form.querySelector('[name="company"]').value = editingCompany.name;
+            form.querySelector('[name="jobOpening"]').value = editingCompany.jobOpening;
+            form.querySelector('[name="notes"]').value = editingCompany.notes;
+            form.querySelector('[name="companyUrl"]').value = editingCompany.url;
+        }
+
+        function saveAllCompanyData() {
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            alert('All company data saved!');
+        }
+
+        document.getElementById('companyForm').addEventListener('submit', saveCompany);
+
         renderCvApplications();
+        renderCompaniesToTrack();
     </script>
 </body>
-
 </html>
