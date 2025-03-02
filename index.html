@@ -303,37 +303,20 @@
             `).join('');
         }
 
-        function saveAllData() {
-            // Combine both data arrays into CSV format
-            const applicationHeader = ['Company Name', 'Position', 'Date Applied', 'Follow-Up Date', 'Status', 'CV File'];
-            const companyHeader = ['Company Name', 'Job Opening', 'Notes'];
+        function openCvTrackerModal() {
+            document.getElementById('cvModal').style.display = 'flex';
+        }
 
-            // Convert applications array to CSV
-            const applicationsCSV = [applicationHeader.join(','), ...cvApplications.map(cv => [
-                cv.company,
-                cv.position,
-                new Date(cv.dateApplied).toLocaleDateString(),
-                new Date(cv.followUpDate).toLocaleDateString(),
-                cv.status,
-                cv.cvFile
-            ].join(','))].join('\n');
+        function closeCvTrackerModal() {
+            document.getElementById('cvModal').style.display = 'none';
+        }
 
-            // Convert companies array to CSV
-            const companiesCSV = [companyHeader.join(','), ...companiesToTrack.map(company => [
-                company.name,
-                company.jobOpening,
-                company.notes
-            ].join(','))].join('\n');
+        function openCompanyTrackerModal() {
+            document.getElementById('companyModal').style.display = 'flex';
+        }
 
-            // Combine both CSVs
-            const combinedCSV = `Companies to Track for Job Openings:\n${companiesCSV}\n\nJob Applications:\n${applicationsCSV}`;
-
-            // Trigger a download
-            const blob = new Blob([combinedCSV], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'job_data.csv';
-            link.click();
+        function closeCompanyTrackerModal() {
+            document.getElementById('companyModal').style.display = 'none';
         }
 
         document.getElementById('cvForm').addEventListener('submit', function(event) {
@@ -362,7 +345,6 @@
                 name: formData.get('company'),
                 jobOpening: formData.get('jobOpening'),
                 notes: formData.get('notes'),
-                url: formData.get('companyUrl')
             };
             companiesToTrack.push(newCompany);
             localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
