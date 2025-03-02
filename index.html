@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,9 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
             margin: 0;
             padding: 20px;
-            background-color: #f3f4f6;
         }
 
         .container {
@@ -22,7 +23,7 @@
             background-color: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
 
@@ -49,10 +50,12 @@
             border-collapse: collapse;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
@@ -70,7 +73,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
             align-items: center;
             justify-content: center;
         }
@@ -94,7 +97,9 @@
             font-weight: bold;
         }
 
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
@@ -114,19 +119,59 @@
             font-weight: 500;
         }
 
-        .status-applied { background-color: #dbeafe; color: #1e40af; }
-        .status-interviewing { background-color: #fef3c7; color: #92400e; }
-        .status-offered { background-color: #dcfce7; color: #166534; }
-        .status-rejected { background-color: #fee2e2; color: #991b1b; }
-        .status-pending { background-color: #e5e7eb; color: #374151; }
+        .status-applied {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-interviewing {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-offered {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-pending {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h1 class="title">Job Application Tracker</h1>
         </div>
 
+        <!-- Track Companies with Potential Job Openings -->
+        <div style="margin-bottom: 20px;">
+            <h2>Companies to Track for Job Openings</h2>
+            <button class="button" onclick="openTrackCompanyModal()">Add Company</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>Job Opening Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="companiesTable">
+                <!-- Companies will be inserted here -->
+            </tbody>
+        </table>
+
+        <!-- Job Application Tracker Table -->
         <div style="margin-bottom: 20px;">
             <button class="button" onclick="openNewApplicationModal()">Add New Application</button>
         </div>
@@ -139,6 +184,7 @@
                     <th>Date Applied</th>
                     <th>Way of Application</th>
                     <th>Status</th>
+                    <th>Follow-Up Date</th>
                     <th>Notes</th>
                     <th>Actions</th>
                 </tr>
@@ -147,6 +193,30 @@
                 <!-- Applications will be inserted here -->
             </tbody>
         </table>
+    </div>
+
+    <!-- Modal for New Company -->
+    <div id="trackCompanyModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Company</h2>
+            <form id="trackCompanyForm">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="company" required>
+                </div>
+                <div class="form-group">
+                    <label>Job Opening Status</label>
+                    <select name="status" required>
+                        <option value="Looking">Looking</option>
+                        <option value="Not Looking">Not Looking</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="button" style="background-color: #6b7280;" onclick="closeTrackCompanyModal()">Cancel</button>
+                    <button type="submit" class="button">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Modal for New Application -->
@@ -200,57 +270,88 @@
     </div>
 
     <script>
+        // Track companies to check for job openings
+        let companiesToTrack = JSON.parse(localStorage.getItem('companiesToTrack') || '[]');
         let applications = JSON.parse(localStorage.getItem('applications') || '[]');
-        let editingAppId = null;
 
-        function renderApplications() {
-            const tbody = document.getElementById('applicationsTable');
-            tbody.innerHTML = applications.map(app => `
+        function renderCompanies() {
+            const tbody = document.getElementById('companiesTable');
+            tbody.innerHTML = companiesToTrack.map(company => `
                 <tr>
-                    <td>${app.company}</td>
-                    <td>${app.role}</td>
-                    <td>${new Date(app.dateApplied).toLocaleDateString()}</td>
-                    <td>${app.applicationMethod}</td>
-                    <td><span class="status-pill status-${app.status}">${capitalizeFirstLetter(app.status)}</span></td>
-                    <td>${app.notes || '-'}</td>
+                    <td>${company.company}</td>
+                    <td>${company.status}</td>
                     <td>
-                        <button class="button" onclick="editApplication('${app.id}')">Edit</button>
-                        <button class="button" onclick="deleteApplication('${app.id}')" style="background-color: #ef4444">Delete</button>
+                        <button class="button" onclick="deleteCompany('${company.id}')">Delete</button>
                     </td>
                 </tr>
             `).join('');
         }
 
+        function renderApplications() {
+            const tbody = document.getElementById('applicationsTable');
+            tbody.innerHTML = applications.map(app => {
+                const followUpDate = new Date(app.dateApplied);
+                followUpDate.setDate(followUpDate.getDate() + 7);
+                return `
+                    <tr>
+                        <td>${app.company}</td>
+                        <td>${app.role}</td>
+                        <td>${new Date(app.dateApplied).toLocaleDateString()}</td>
+                        <td>${app.applicationMethod}</td>
+                        <td><span class="status-pill status-${app.status}">${capitalizeFirstLetter(app.status)}</span></td>
+                        <td>${followUpDate.toLocaleDateString()}</td>
+                        <td>${app.notes || '-'}</td>
+                        <td>
+                            <button class="button" onclick="followUpReminder('${app.id}')">Follow Up</button>
+                            <button class="button" onclick="editApplication('${app.id}')">Edit</button>
+                            <button class="button" onclick="deleteApplication('${app.id}')" style="background-color: #ef4444">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openTrackCompanyModal() {
+            document.getElementById('trackCompanyModal').style.display = 'flex';
+        }
+
+        function closeTrackCompanyModal() {
+            document.getElementById('trackCompanyModal').style.display = 'none';
+        }
+
         function openNewApplicationModal() {
-            editingAppId = null;
-            document.getElementById('modalTitle').textContent = 'New Application';
-            document.getElementById('newApplicationForm').reset();
-            document.getElementById('newApplicationModal').style.display = 'flex'; 
+            document.getElementById('newApplicationModal').style.display = 'flex';
         }
 
         function closeNewApplicationModal() {
             document.getElementById('newApplicationModal').style.display = 'none';
         }
 
-        function editApplication(id) {
-            editingAppId = id;
-            const app = applications.find(app => app.id === id);
-            document.getElementById('modalTitle').textContent = 'Edit Application';
-            document.querySelector('[name="company"]').value = app.company;
-            document.querySelector('[name="role"]').value = app.role;
-            document.querySelector('[name="dateApplied"]').value = app.dateApplied;
-            document.querySelector('[name="applicationMethod"]').value = app.applicationMethod;
-            document.querySelector('[name="status"]').value = app.status;
-            document.querySelector('[name="notes"]').value = app.notes;
-            document.getElementById('newApplicationModal').style.display = 'flex';
+        function addCompany(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const newCompany = {
+                id: Date.now().toString(),
+                company: formData.get('company'),
+                status: formData.get('status')
+            };
+            companiesToTrack.push(newCompany);
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            renderCompanies();
+            closeTrackCompanyModal();
         }
 
-        document.getElementById('newApplicationForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        function deleteCompany(id) {
+            companiesToTrack = companiesToTrack.filter(company => company.id !== id);
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            renderCompanies();
+        }
 
-            const formData = new FormData(e.target);
+        function addApplication(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
             const newApplication = {
-                id: editingAppId || Date.now().toString(),
+                id: Date.now().toString(),
                 company: formData.get('company'),
                 role: formData.get('role'),
                 dateApplied: formData.get('dateApplied'),
@@ -258,32 +359,43 @@
                 status: formData.get('status'),
                 notes: formData.get('notes')
             };
-
-            if (editingAppId) {
-                const index = applications.findIndex(app => app.id === editingAppId);
-                applications[index] = newApplication;
-            } else {
-                applications.push(newApplication);
-            }
-
+            applications.push(newApplication);
             localStorage.setItem('applications', JSON.stringify(applications));
             renderApplications();
             closeNewApplicationModal();
-        });
+        }
 
         function deleteApplication(id) {
-            if (confirm('Are you sure you want to delete this application?')) {
-                applications = applications.filter(app => app.id !== id);
-                localStorage.setItem('applications', JSON.stringify(applications));
-                renderApplications();
-            }
+            applications = applications.filter(app => app.id !== id);
+            localStorage.setItem('applications', JSON.stringify(applications));
+            renderApplications();
         }
 
-        function capitalizeFirstLetter(str) {
-            return str.charAt(0).toUpperCase() + str.slice(1);
+        function followUpReminder(id) {
+            const app = applications.find(app => app.id === id);
+            const followUpDate = new Date(app.dateApplied);
+            followUpDate.setDate(followUpDate.getDate() + 7);
+            alert(`Remember to follow up with ${app.company} on ${followUpDate.toLocaleDateString()}`);
         }
 
+        function editApplication(id) {
+            const app = applications.find(app => app.id === id);
+            // Set form values and open modal for editing
+            document.getElementById('newApplicationModal').style.display = 'flex';
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Event listeners for the forms
+        document.getElementById('trackCompanyForm').addEventListener('submit', addCompany);
+        document.getElementById('newApplicationForm').addEventListener('submit', addApplication);
+
+        // Initial render
+        renderCompanies();
         renderApplications();
     </script>
 </body>
+
 </html>
