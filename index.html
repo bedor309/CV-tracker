@@ -147,14 +147,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="title">Job Application and Company Tracker</h1>
+            <h1 class="title">Job Application Tracker</h1>
         </div>
 
         <!-- CV Tracker Section -->
         <div style="margin-bottom: 20px;">
             <h2>Job Application Tracker</h2>
             <button class="button" onclick="openCvTrackerModal()">Add CV</button>
-            <button class="button" onclick="saveAllData()">Save All Data</button>
+            <button class="button" onclick="saveAllCvData()">Save All Data</button>
         </div>
 
         <table>
@@ -178,6 +178,7 @@
         <div style="margin-bottom: 20px;">
             <h2>Companies to Track for Job Openings</h2>
             <button class="button" onclick="openCompanyTrackerModal()">Add Company</button>
+            <button class="button" onclick="saveAllCompanyData()">Save All Data</button>
         </div>
 
         <table>
@@ -212,7 +213,7 @@
                     </div>
                     <div class="form-group">
                         <label>Follow-Up Date</label>
-                        <input type="date" name="followUpDate" required>
+                        <input type="date" name="followUpDate" required readonly>
                     </div>
                     <div class="form-group">
                         <label>Status</label>
@@ -242,12 +243,16 @@
                 <h2>Add Company</h2>
                 <form id="companyForm">
                     <div class="form-group">
-                        <label>Company Name (URL)</label>
-                        <input type="url" name="companyUrl" required>
+                        <label>Company Name</label>
+                        <input type="text" name="company" required>
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
                         <textarea name="notes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Company URL</label>
+                        <input type="url" name="companyUrl" required>
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
                         <button type="button" class="button" style="background-color: #6b7280;" onclick="closeCompanyTrackerModal()">Cancel</button>
@@ -260,7 +265,7 @@
     </div>
 
     <script>
-        // Job Application Tracker Section
+        // CV Tracker Section
         let cvApplications = JSON.parse(localStorage.getItem('cvApplications') || '[]');
         let editingCv = null;
 
@@ -286,6 +291,8 @@
             editingCv = null;
             document.getElementById('cvModal').style.display = 'flex';
             document.getElementById('cvForm').reset();
+            const dateAppliedField = document.querySelector('[name="dateApplied"]');
+            dateAppliedField.value = ''; // Clear the previous date if any
         }
 
         function closeCvTrackerModal() {
@@ -297,7 +304,7 @@
             const formData = new FormData(event.target);
             const dateApplied = formData.get('dateApplied');
             const followUpDate = new Date(dateApplied);
-            followUpDate.setDate(followUpDate.getDate() + 7);
+            followUpDate.setDate(followUpDate.getDate() + 7); // Automatically set Follow-Up Date to 7 days after Date Applied
             const newCv = {
                 id: editingCv ? editingCv.id : Date.now().toString(),
                 company: formData.get('company'),
@@ -337,6 +344,13 @@
             form.querySelector('[name="status"]').value = editingCv.status;
         }
 
+        function saveAllCvData() {
+            localStorage.setItem('cvApplications', JSON.stringify(cvApplications));
+            alert('All CV data saved!');
+        }
+
+        document.getElementById('cvForm').addEventListener('submit', saveCv);
+
         // Company Tracker Section
         let companiesToTrack = JSON.parse(localStorage.getItem('companiesToTrack') || '[]');
         let editingCompany = null;
@@ -370,7 +384,7 @@
             const formData = new FormData(event.target);
             const newCompany = {
                 id: editingCompany ? editingCompany.id : Date.now().toString(),
-                name: formData.get('companyUrl'),
+                name: formData.get('company'),
                 notes: formData.get('notes'),
                 url: formData.get('companyUrl')
             };
@@ -397,40 +411,16 @@
             editingCompany = companiesToTrack.find(company => company.id === id);
             document.getElementById('companyModal').style.display = 'flex';
             const form = document.getElementById('companyForm');
-            form.querySelector('[name="companyUrl"]').value = editingCompany.url;
+            form.querySelector('[name="company"]').value = editingCompany.name;
             form.querySelector('[name="notes"]').value = editingCompany.notes;
+            form.querySelector('[name="companyUrl"]').value = editingCompany.url;
         }
 
-        function saveAllData() {
-            const allData = {
-                cvApplications,
-                companiesToTrack
-            };
-            const csv = convertToCSV(allData);
-            downloadCSV(csv, 'job_tracker_data.csv');
+        function saveAllCompanyData() {
+            localStorage.setItem('companiesToTrack', JSON.stringify(companiesToTrack));
+            alert('All company data saved!');
         }
 
-        function convertToCSV(data) {
-            let csv = 'CV Applications\nCompany,Position,Date Applied,Follow-Up Date,Status,CV File\n';
-            data.cvApplications.forEach(cv => {
-                csv += `${cv.company},${cv.position},${cv.dateApplied},${cv.followUpDate},${cv.status},${cv.cvFile}\n`;
-            });
-            csv += '\nCompanies to Track\nCompany Name,Notes\n';
-            data.companiesToTrack.forEach(company => {
-                csv += `${company.name},${company.notes}\n`;
-            });
-            return csv;
-        }
-
-        function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
-        }
-
-        document.getElementById('cvForm').addEventListener('submit', saveCv);
         document.getElementById('companyForm').addEventListener('submit', saveCompany);
 
         renderCvApplications();
