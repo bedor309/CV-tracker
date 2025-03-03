@@ -210,10 +210,6 @@
                         <input type="date" name="dateApplied" required>
                     </div>
                     <div class="form-group">
-                        <label>Follow-Up Date</label>
-                        <input type="date" name="followUpDate" required>
-                    </div>
-                    <div class="form-group">
                         <label>Status</label>
                         <select name="status" required>
                             <option value="Applied">Applied</option>
@@ -243,6 +239,10 @@
                     <div class="form-group">
                         <label>Company Name</label>
                         <input type="text" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Company URL</label>
+                        <input type="url" name="companyUrl" required>
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
@@ -299,6 +299,7 @@
             const dateApplied = formData.get('dateApplied');
             const followUpDate = new Date(dateApplied);
             followUpDate.setDate(followUpDate.getDate() + 7);  // Automatically set follow-up date to 1 week after
+            
             const newCv = {
                 id: editingCv ? editingCv.id : Date.now().toString(),
                 company: formData.get('company'),
@@ -306,7 +307,9 @@
                 dateApplied,
                 followUpDate: followUpDate.toISOString().split('T')[0],
                 status: formData.get('status'),
-                cvFile: URL.createObjectURL(formData.get('cvFile'))
+                cvFile: formData.get('cvFile') instanceof File && formData.get('cvFile').size > 0 
+                    ? URL.createObjectURL(formData.get('cvFile')) 
+                    : (editingCv ? editingCv.cvFile : '')
             };
 
             if (editingCv) {
@@ -334,8 +337,8 @@
             form.querySelector('[name="company"]').value = editingCv.company;
             form.querySelector('[name="position"]').value = editingCv.position;
             form.querySelector('[name="dateApplied"]').value = editingCv.dateApplied;
-            form.querySelector('[name="followUpDate"]').value = editingCv.followUpDate;
             form.querySelector('[name="status"]').value = editingCv.status;
+            // No need to set followUpDate field as it's been removed from the form
         }
 
         // Save All Data as CSV
@@ -438,8 +441,10 @@
             const form = document.getElementById('companyForm');
             form.querySelector('[name="company"]').value = editingCompany.name;
             form.querySelector('[name="notes"]').value = editingCompany.notes;
-            form.querySelector('[name="companyUrl"]').value = editingCompany.url;
+            form.querySelector('[name="companyUrl"]').value = editingCompany.url || '';
         }
+
+        document.getElementById('companyForm').addEventListener('submit', saveCompany);
 
         renderCvApplications();
         renderCompaniesToTrack();
