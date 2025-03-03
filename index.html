@@ -6,62 +6,100 @@
     <title>Job Application and Company Tracker</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1497864149936-d3163f0c0f4b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
             margin: 0;
-            padding: 20px;
+            padding: 30px;
+            color: #333;
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             overflow-x: auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
 
         .header {
             background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            border-left: 5px solid #4f46e5;
         }
 
         .title {
-            color: #2563eb;
+            color: #4f46e5;
             margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
         .button {
-            background-color: #2563eb;
+            background-color: #4f46e5;
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);
         }
 
         .button:hover {
-            background-color: #1e40af;
+            background-color: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.4);
+        }
+
+        h2 {
+            color: #4f46e5;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            overflow: hidden;
         }
 
         th, td {
-            padding: 12px;
+            padding: 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #f1f1f1;
         }
 
         th {
-            background-color: #f8f9fa;
-            font-weight: bold;
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #4b5563;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background-color: #f9fafb;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
         }
 
         .modal {
@@ -71,55 +109,77 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.6);
             align-items: center;
             justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
         }
 
         .modal-content {
             background: white;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 30px;
+            border-radius: 15px;
             width: 500px;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4b5563;
         }
 
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             box-sizing: border-box;
+            font-family: inherit;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #4f46e5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
         }
 
         .form-group textarea {
-            height: 100px;
+            height: 120px;
             resize: vertical;
         }
 
         .status-pill {
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 14px;
             font-weight: 500;
+            display: inline-block;
         }
 
         .status-applied {
-            background-color: #dbeafe;
-            color: #1e40af;
+            background-color: #e0f2fe;
+            color: #0369a1;
         }
 
         .status-interviewing {
@@ -138,8 +198,20 @@
         }
 
         .status-pending {
-            background-color: #e5e7eb;
-            color: #374151;
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #4338ca;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -224,7 +296,7 @@
                         <input type="file" name="cvFile" required>
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                        <button type="button" class="button" style="background-color: #6b7280;" onclick="closeCvTrackerModal()">Cancel</button>
+                        <button type="button" class="button" style="background-color: #9ca3af;" onclick="closeCvTrackerModal()">Cancel</button>
                         <button type="submit" class="button">Save</button>
                     </div>
                 </form>
@@ -249,7 +321,7 @@
                         <textarea name="notes"></textarea>
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                        <button type="button" class="button" style="background-color: #6b7280;" onclick="closeCompanyTrackerModal()">Cancel</button>
+                        <button type="button" class="button" style="background-color: #9ca3af;" onclick="closeCompanyTrackerModal()">Cancel</button>
                         <button type="submit" class="button">Save</button>
                     </div>
                 </form>
